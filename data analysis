@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Feb 28 16:37:01 2023
+Created on Wed Mar  1 12:55:34 2023
 
 @author: DELL
 """
@@ -12,28 +12,30 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
 
-
 fpath="C:/Users/DELL/Desktop/python数据分析/python2/weiruan/msyh.ttc"
-f=open("C:/Users/DELL/Desktop/python数据分析/python2/weibo.txt",'r',encoding='utf-8')#读取文件
-f1=open('C:/Users/DELL/Desktop/python数据分析/python2/stopwords.txt','r',encoding='utf-8')#引入停用词表
-stopwords=[]
-for line in f1:
-    if len(line)>0:
-        stopwords.append(line.strip())#将停用词表搞成列表
         
+f=open("C:/Users/DELL/Desktop/python数据分析/python2/weibo.txt",'r',encoding='utf-8')#读取文件    
 terms=[]
 for line in f:
     l=line.strip().split('\t')#用split进行分割
     t=list(jieba.cut(l[1]))#选出文本并进行分词
     terms.extend(t)
-'''
 dterms=Counter(terms)#统计词频
 for k,v in dterms.items():
     print(k,v)
-d=sorted(dterms.items(),key=lambda item:item[1])#按照词频排序
-print("高频词{} 高频词次数{}，低频词{} 低频词次数{}".format(d[-1][0],d[-1][1],d[0][0],d[0][1]))#输出高频词和低频词
-'''
 
+    
+d=sorted(dterms.items(),key=lambda item:item[1])#按照词频排序
+print("高频词{} 高频词频次{}".format(d[-1][0],d[-1][1]))#输出高频词
+for i in dterms:
+    if dterms[i]==1:
+        print("低频词{} 低频词频次{}".format(i,dterms[i]))#输出低频词
+
+f1=open('C:/Users/DELL/Desktop/python数据分析/python2/stopwords.txt','r',encoding='utf-8')#引入停用词表
+stopwords=[]
+for line in f1:
+    if len(line)>0:
+        stopwords.append(line.strip())#将停用词表搞成列表
 terms1=[i for i in terms if i not in stopwords]#过滤停用词
 '''
 n=0
@@ -41,14 +43,16 @@ for i in terms1:
     if (i=='，'):
         n+=1
 print(n)
-'''
-    
+'''   
 dterms1=Counter(terms1)
 for k,v in dterms1.items():
     print(k,v)
 d1=sorted(dterms1.items(),key=lambda item:item[1])
-print("高频词{} 高频词次数{}，低频词{} 低频词次数{}".format(d1[-1][0],d1[-1][1],d1[0][0],d1[0][1]))
-
+print("高频词{} 高频词频次{}".format(d1[-1][0],d1[-1][1]))#输出高频词
+for i in dterms1:
+    if dterms1[i]==1:
+        print("低频词{} 低频词频次{}".format(i,dterms1[i]))#输出低频词
+    
 wd=WordCloud(font_path=fpath)
 
 wd.fit_words(dterms1)
@@ -56,6 +60,7 @@ plt.imshow(wd)
 plt.axis('off')
 plt.show()#可视化
 f.close()
+
 ln=[]#名词
 '''la=[]#形容词
 ld=[]#副词
@@ -93,5 +98,5 @@ wd = WordCloud(font_path=fpath, max_words=1000)
 wd.fit_words(dln)
 plt.imshow(wd, interpolation="bilinear")
 plt.axis('off')
-plt.show()#名词可视化
+plt.show()
 f1.close()
