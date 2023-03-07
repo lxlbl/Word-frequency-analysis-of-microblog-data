@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Mar  7 16:17:48 2023
+Created on Tue Mar  7 23:04:37 2023
 
 @author: DELL
 """
@@ -145,8 +145,11 @@ def time_emo(mode,mood,emotime=e3):
                 weekd[weeks[i]]+=numm
                 
         x=list(weekdict.keys())#时间字典的键，表示时间
-        s=sum(list(weekd.values()))
-        y=[i/s for i in list(weekdict.values())]#时间字典的值，表示改时间下目标情绪的出现次数比例
+        y=[]
+        for i in range(7):
+            y.append(list(weekdict.values())[i]/list(weekd.values())[i]) 
+      
+        #时间字典的值，表示改时间下目标情绪的出现次数比例
         
     #同上   
     elif mode=="months":
@@ -159,9 +162,10 @@ def time_emo(mode,mood,emotime=e3):
                 monthd[months[i]]+=numm
             
         x=list(monthdict.keys())
-        s=sum(list(monthd.values()))
-        y=[i/s for i in list(monthdict.values())]
-        
+        y=[]
+        for i in range(12):
+            y.append(list(monthdict.values())[i]/list(monthd.values())[i]) 
+     
     elif mode=="hours":
         for i in range(len(text)):
             num=emotime[i][j][1]
@@ -172,9 +176,10 @@ def time_emo(mode,mood,emotime=e3):
                 hourd[hours[i]]+=numm
             
         x=list(hourdict.keys())
-        s=sum(list(hourd.values()))
-        y=[i/s for i in list(hourdict.values())]
-        
+        y=[]
+        for i in range(24):
+            y.append(list(hourdict.values())[i]/list(hourd.values())[i]) 
+      
     #绘图
     plt.plot(x,y)
     plt.show()
@@ -191,3 +196,19 @@ time_emo('weeks','sadness')
       
                 
         
+        
+    
+                    
+                
+                
+                
+                        
+                    
+                
+                
+            
+            
+        
+        
+        
+    
