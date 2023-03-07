@@ -1,0 +1,193 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Mar  7 16:17:48 2023
+
+@author: DELL
+"""
+
+import jieba
+import random
+import matplotlib.pyplot as plt#导入库
+
+f=open('C:/Users/DELL/Desktop/python数据分析/python2/weibo.txt',encoding='utf-8')#导入微博文件
+text=[]
+for line in f:
+    text.append(line.strip().split('\t'))#把微博文件的每一行（包括经纬度、文字、时间）存入列表
+    
+
+path1='C:/Users/DELL/Desktop/python数据分析/emotion/emo/data/emotion_lexicon/joy.txt'
+path2='C:/Users/DELL/Desktop/python数据分析/emotion/emo/data/emotion_lexicon/anger.txt'
+path3='C:/Users/DELL/Desktop/python数据分析/emotion/emo/data/emotion_lexicon/disgust.txt'
+path4='C:/Users/DELL/Desktop/python数据分析/emotion/emo/data/emotion_lexicon/fear.txt'
+path5='C:/Users/DELL/Desktop/python数据分析/emotion/emo/data/emotion_lexicon/sadness.txt'
+palist=[path1,path2,path3,path4,path5]#导入面向微博的五类情绪的文件
+
+def add_jieba(palist):
+    for path in palist:
+        jieba.load_userdict(path)#用函数将情绪词典导入jieba自定义词典
+add_jieba(palist)
+        
+def analysis_emo(palist):#定义函数（闭包）实现微博的情绪分析
+    emo=[]
+    for path in palist:
+        e=[]
+        with open(path,encoding='utf-8') as f0:#分别打开每一个情绪文件
+            for line in f0:
+                e.append(line.strip())#将一个情绪文件每一行的情绪用词添加到一个列表中
+        emo.append(e)#把五个情绪文件的情绪用词列表添加到一个大列表里面
+    def inner_analysis_emo(text):
+        nonlocal emo
+        emotion1=[]#每一行微博表现出来的所有情绪以及其相应的比例
+        emotion2=[]#每一行微博表现出来的情绪（用对应次数最多的情绪表示）
+        emotion3=[]#每一行微博表现出来的所有情绪、每个情绪次数、时间
+        for l in text:#[19:25]:
+        #微博文件的每一行
+            words=list(jieba.cut(l[1]))#对每一行的文字表述进行jieba分词，形成列表
+            emodict={'joy':0,'anger':0,'disgust':0,'fear':0,'sadness':0}
+            #将情绪与情绪用词出现的次数组成字典
+            for word in words:
+                if word in emo[0]:
+                    emodict['joy']+=1
+                elif word in emo[1]:
+                    emodict['anger']+=1
+                elif word in emo[2]:
+                    emodict['disgust']+=1
+                elif word in emo[3]:
+                    emodict['fear']+=1
+                elif word in emo[4]:
+                    emodict['sadness']+=1
+                else:
+                    pass
+            #对每一行分词后的词语进行遍历，看是否出现情绪用词，如果出现则将对应情绪次数加一
+            emod=sorted(emodict.items(),key=lambda item: item[1])
+            #将情绪和情绪用词的次数组成的字典按次数进行排序
+            max=emod[-1][1]#求情绪对应的最大次数
+            if max != 0:
+                maxnum=0
+                for i in emod:
+                    if i[1]==max:
+                        maxnum+=1
+                if maxnum==1:
+                    emotion2.append(emod[-1][0])
+                    #如果只有一个情绪其用词出现次数最高，那该行微博就表现该情绪
+                else:
+                    m=random.choice(emod[(5-maxnum):5])
+                    emotion2.append(m[0])
+                    #如果有多个情绪出现次数最高，随机选一个作为改行微博表现情绪
+            else:
+                emotion2.append('neutrality')
+                #如果最大次数为零，则说明改行没有情绪用词，呈现情绪中性
+                
+            t=sum(list(emodict.values()))#求出每一行微博表现出来的所有情绪对应的次数之和
+            le=[]
+            letime=[]
+            if (t!=0):
+                for k in emodict.keys():
+                    if emodict[k]/t !=0:
+                        le.append([k,str(emodict[k])+'/'+str(t)])
+            #如果情绪总次数不为零，说明改行微博有情绪，并将其反映出的情绪以及改情绪的比例组成小列表，加入行情绪列表中
+            else:
+                le.append('neutrality')#如果情绪总次数为零，说明情绪中立
+            emotion1.append(le)
+            for k in emodict.keys():
+                letime.append([k,emodict[k],l[2]])
+                #将该行所有可能情绪，每一种情绪出现的次数，以及对应的时间组成一个列表，在加入到表示行情绪的列表中
+            emotion3.append(letime)
+        return emotion1,emotion2,emotion3
+    return inner_analysis_emo
+e1,e2,e3=analysis_emo(palist)(text)#调用闭包函数
+#print(e1)
+#print(e2)
+#因为上面两个运行时间太长，结果太多，为了不影响接下来的运行，所以注释掉
+
+def time_emo(mode,mood,emotime=e3):
+    weeks=[i[0][2][0:3] for i in emotime]
+    #对于每一行，随便选一个情绪列表（这里以'joy'为例），找到该行微博对应的时间（周）
+    months=[i[0][2][4:7] for i in emotime]
+    #对于每一行，随便选一个情绪列表（这里以'joy'为例），找到该行微博对应的时间（月）
+    hours=[i[0][2][11:13] for i in emotime]
+    #对于每一行，随便选一个情绪列表（这里以'joy'为例），找到该行微博对应的时间（小时）
+    weekdict={'Mon':0,'Tue':0,'Wed':0,'Thu':0,'Fri':0,'Sat':0,'Sun':0}
+    #创建时间字典，表示改时间下出现的某种情绪次数（下面两个列表同上）
+    monthdict={'Jan':0,'Feb':0,'Mar':0,'Apr':0,'May':0,'Jun':0,'Jul':0,'Aug':0,'Sep':0,'Oct':0,'Nov':0,'Dec':0}
+    hourdict={'00':0,'01':0,'02':0,'03':0,'04':0,'05':0,'06':0,'07':0,'08':0,
+              '09':0,'10':0,'11':0,'12':0,'13':0,'14':0,'15':0,'16':0,
+              '17':0,'18':0,'19':0,'20':0,'21':0,'22':0,'23':0,}
+    
+    weekd={'Mon':0,'Tue':0,'Wed':0,'Thu':0,'Fri':0,'Sat':0,'Sun':0}
+    #创建时间字典，表示改时间下出现的所有情绪次数（下面两个列表同上）
+    monthd={'Jan':0,'Feb':0,'Mar':0,'Apr':0,'May':0,'Jun':0,'Jul':0,'Aug':0,'Sep':0,'Oct':0,'Nov':0,'Dec':0}
+    hourd={'00':0,'01':0,'02':0,'03':0,'04':0,'05':0,'06':0,'07':0,'08':0,
+              '09':0,'10':0,'11':0,'12':0,'13':0,'14':0,'15':0,'16':0,
+              '17':0,'18':0,'19':0,'20':0,'21':0,'22':0,'23':0,}
+    
+    #判断情绪，确定选择哪一个情绪列表
+    if mood=="joy":
+        j=0
+    elif mood=="anger":
+        j=1
+    elif mood=="disgust":
+        j=2
+    elif mood=="fear":
+        j=3
+    elif mood=="sadness":
+        j=4
+    else:
+        print('Wrong!')
+    if mode=="weeks":
+        for i in range(len(text)):#对于每一行微博
+            num=emotime[i][j][1]#i表示行数，j表示选择的情绪列表，1表示该情绪次数
+            weekdict[weeks[i]]+=num
+            #用第i行对应的时间决定这个情绪的次数加到时间字典的哪一个键值对上面
+            
+            for p in range(5):
+                numm=emotime[i][p][1]#i表示行数，p表示选择的情绪列表，1表示该情绪次数
+                weekd[weeks[i]]+=numm
+                
+        x=list(weekdict.keys())#时间字典的键，表示时间
+        s=sum(list(weekd.values()))
+        y=[i/s for i in list(weekdict.values())]#时间字典的值，表示改时间下目标情绪的出现次数比例
+        
+    #同上   
+    elif mode=="months":
+        for i in range(len(text)):
+            num=emotime[i][j][1]
+            monthdict[months[i]]+=num
+            
+            for p in range(5):
+                numm=emotime[i][p][1]#i表示行数，p表示选择的情绪列表，1表示该情绪次数
+                monthd[months[i]]+=numm
+            
+        x=list(monthdict.keys())
+        s=sum(list(monthd.values()))
+        y=[i/s for i in list(monthdict.values())]
+        
+    elif mode=="hours":
+        for i in range(len(text)):
+            num=emotime[i][j][1]
+            hourdict[hours[i]]+=num
+            
+            for p in range(5):
+                numm=emotime[i][p][1]#i表示行数，p表示选择的情绪列表，1表示该情绪次数
+                hourd[hours[i]]+=numm
+            
+        x=list(hourdict.keys())
+        s=sum(list(hourd.values()))
+        y=[i/s for i in list(hourdict.values())]
+        
+    #绘图
+    plt.plot(x,y)
+    plt.show()
+#调用时间/情绪次数绘图函数
+'''
+lmode=["weeks","months","hours"]
+lmood=["joy","anger","fear","disgust","fear","sadness"]
+for p in lmode:
+    for q in lmood:
+        time_emo(p,q)
+'''
+time_emo('hours','joy')
+time_emo('weeks','sadness')
+      
+                
+        
