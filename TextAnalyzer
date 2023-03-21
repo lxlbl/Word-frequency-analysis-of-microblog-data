@@ -1,0 +1,96 @@
+import jieba
+from sklearn.manifold import TSNE
+from gensim.models import Word2Vec
+import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
+weiruan = FontProperties(fname='C:/Users/DELL/Desktop/python数据分析/python2/weiruan/msyh.ttc')
+import numpy as np
+
+class TextAnalyzer:#定义类
+    #定义类的属性，如待分析的文本路径fanalyse,预训练模型路径fload,还有Word2Vec的一些属性，比如窗口、向量长度
+    fanalyse='C:/Users/DELL/Desktop/python数据分析/python2/weibo.txt'
+    fload='C:/Users/DELL/Desktop/python数据分析/python5-pre-trained-weibo-word2vec/weibo_59g_embedding_200.model'
+    vector_size=300
+    window=5
+    #定义一个方法，把待分析的文本进行预处理
+    def pretreat(self):
+        stop=[]#停用词列表
+        sentences=[]#分词和去除停用词之后的文本二维列表
+        with open('C:/Users/DELL/Desktop/python数据分析/python2/stopwords.txt','r',encoding='utf-8') as f0:
+            for l in f0:
+                stop.append(l.strip())
+        with open(self.fanalyse,'r',encoding='utf-8') as f:
+            for line in f:
+                s=jieba.cut(line.strip().split('\t')[1])
+                words=[i for i in s if i not in stop]
+                sentences.append(words)
+        #print(sentences)
+        return sentences
+    #定义一个方法，基于上述文本构建Word2Vec的模型model
+    def word_model(self,sentences):
+        # 建立Word2Vec模型
+        model = Word2Vec(sentences, vector_size=self.vector_size, window=self.window, min_count=1)
+        return model
+    #定义一个方法，利用得到的model来推断相似词汇
+    def similar_word(self,model,ci):
+        most_similar = model.wv.most_similar(ci, topn=10)
+        print(most_similar)
+    #加载预训练模型，通过相似词的差异对比预训练模型和上述训练的模型
+    def load_pretrain(self,ci):
+        model2 = Word2Vec.load(self.fload)
+        most_similar2 = model2.wv.most_similar(ci, topn=10)
+        print(most_similar2)
+    #定义一个方法，扩展情感词典
+    def extend_emotion(self,palist):
+        model2 = Word2Vec.load(self.fload)#使用预训练模型
+        for path in palist:#对于每一个情感文件
+            e=[]
+            with open(path,'r+',encoding='utf-8') as fp:
+                for lp in fp:
+                    e.append(lp.strip())#提取每一个情感字典的所有词语组成列表
+                for ci in e:
+                    most_similar2 = model2.wv.most_similar(ci, topn=5)
+                    #找到每一个词语相近的五个词
+                    si=[i[0] for i in most_similar2]
+                    for i in si:
+                        fp.write(i+'\n')#把相似的五个词加入该情感文件
+    
+    def demension_show(self,model):
+        most_similar = model.wv.most_similar("春天", topn=10)
+        least_similar = model.wv.most_similar(negative=["春天"], topn=10)
+        # 将最相关和最不相关的词汇向量合并为一个数组
+        vectors = np.array([model.wv[word] for word, similarity in most_similar + least_similar])
+        print(vectors.shape)
+        words = [word for word, similarity in most_similar + least_similar]
+
+        # 使用t-SNE算法对词向量进行降维
+        tsne = TSNE(n_components=2, perplexity=10)
+        #print(vectors)
+        vectors_tsne = tsne.fit_transform(vectors)
+
+        # 可视化降维后的词向量
+        fig, ax = plt.subplots()
+        ax.set_title('春天', fontproperties = weiruan)
+        ax.scatter(vectors_tsne[:10, 0], vectors_tsne[:10, 1], color='blue')
+        ax.scatter(vectors_tsne[10:, 0], vectors_tsne[10:, 1], color='red')
+        for i, word in enumerate(words):
+            ax.annotate(word, (vectors_tsne[i, 0], vectors_tsne[i, 1]),fontproperties = weiruan)
+            plt.show()
+
+                    
+                
+t=TextAnalyzer()
+sen=t.pretreat()
+model=t.word_model(sen)
+t.similar_word(model,'春天')
+t.load_pretrain('春天')
+'''
+path1='C:/Users/DELL/Desktop/python数据分析/emotion/emo/data/emotion_lexicon/joy.txt'
+path2='C:/Users/DELL/Desktop/python数据分析/emotion/emo/data/emotion_lexicon/anger.txt'
+path3='C:/Users/DELL/Desktop/python数据分析/emotion/emo/data/emotion_lexicon/disgust.txt'
+path4='C:/Users/DELL/Desktop/python数据分析/emotion/emo/data/emotion_lexicon/fear.txt'
+path5='C:/Users/DELL/Desktop/python数据分析/emotion/emo/data/emotion_lexicon/sadness.txt'
+palist=[path1,path2,path3,path4,path5]#导入面向微博的五类情绪的文件  
+t.extend_emotion(palist)   
+'''
+t.demension_show(model)
